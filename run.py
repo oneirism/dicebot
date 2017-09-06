@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import dice_notation
+
 import logging
 import re
 import sys
@@ -7,8 +9,12 @@ from uuid import uuid4
 
 import dice
 import parser
-from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, ParseMode, Update
+from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, ParseMode, Update, User
 from telegram.ext import CommandHandler, InlineQueryHandler, Updater
+
+
+INVALID_DICE_NOTATION_MSG = 'Invalid <a href="https://en.wikipedia.org/wiki/Dice_notation">Dice Notation.</a>'
+INVALID_DICE_NOTATION_MSG += '\r\nExample: <code>1d10</code> or <code>2d30 + 4</code>'
 
 
 # Enable logging
@@ -18,74 +24,62 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def parse_dice_notation(query: str) -> typing.Match:
-    #TODO(devenney): Restrict number of dice and size of bonus.
-    pattern = re.compile("^(\d+)(d)(\d+)((\+)(\d+))?")
-    return pattern.match(query)
+def roll_responder(user: User, query: str) -> str:
+    total, roll_results = roll_em(query)
 
-
-def roll_responder(query: str) -> str:
-    roll_results, computed_components = roll_em(query)
-
-    eq = ''.join(str(component) for component in computed_components)
-    total = eval(parser.expr(eq).compile())
-
-    response = 'Roll: {0}\nResult: {1}\nTotal: {2}'.format(query,  ' - '.join(str(roll) for roll in roll_results), total)
+    response = '<i>{0} rolled {1}</i>\n\n'.format(user.username, query)
+    response += '<b>Results</b>:\n'.format(roll_results)
+    for roll in roll_results:
+        result = '{0}d{1}: {2}'.format(len(roll), roll.sides, roll)
+        response += '\t\t{0}\n'.format(result)
+    response += '<b>Total</b>: {0}'.format(total)
     return response
 
 
-def roll_em(query: str) -> list:
-    pattern = re.compile("(\d+)(d)(\d+)")
+def roll_em(query: str) -> (int, list):
+    total, roll_results = dice_notation.evaluate(query)
 
-    operand_pattern = re.compile("([+-/*])")
-
-    components = re.split(operand_pattern, query.replace(" ", ""))
-
-    computed_components = []
-    roll_results = []
-
-    for component in components:
-        print(component)
-        if pattern.match(component):
-            rolls = dice.roll(component)
-            roll_results.append(rolls)
-            computed_components.append('(')
-            for roll in rolls[:-1]:
-                computed_components.append(roll)
-                computed_components.append('+')
-            computed_components.append(rolls[-1])
-            computed_components.append(')')
-        else:
-            computed_components.append(component)
-
-    return roll_results, computed_components
+    return total, roll_results
 
 
 def commandquery(bot: Bot, update, args):
+    chat_id = update.message.chat_id
     query = ''.join(args)
-    if parse_dice_notation(query):
-        response = roll_responder(query)
-        update.message.reply_text(response)
+
+    if dice_notation.is_valid_dice_notation(query):
+        response = roll_responder(update.message.from_user, query)
+        bot.send_message(chat_id, response, 'HTML', True)
     else:
-        update.message.reply_text("Invalid Dice Notation. Example: 2d30 + 4")
+        bot.send_message(
+            chat_id,
+            INVALID_DICE_NOTATION_MSG,
+            'HTML',
+            True
+        )
 
 
 def inlinequery(bot: Bot, update: Update):
-    query = update.inline_query.query
+    query = update.inline_query.query.replace(" ", "")
     results = list()
 
-    if parse_dice_notation(query):
+    if dice_notation.is_valid_dice_notation(query):
         results.append(InlineQueryResultArticle(id=uuid4(),
-                                                title="Roll",
+                                                title="Roll {0}".format(query),
                                                 input_message_content=InputTextMessageContent(
-                                                    roll_responder(query))))
+                                                    roll_responder(update.inline_query.from_user, query),
+                                                    disable_web_page_preview=True,
+                                                    parse_mode='HTML'
+                                                )))
     else:
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Invalid Roll",
                                                 input_message_content=InputTextMessageContent(
-                                                    "Invalid Dice Notation")))
+                                                    INVALID_DICE_NOTATION_MSG,
+                                                    disable_web_page_preview=True,
+                                                    parse_mode='HTML'
+                                                )))
 
-    update.inline_query.answer(results, cache_time=0)
+    bot.answer_inline_query(update.inline_query.id, results, cache_time=0)
 
 
 def error(bot: Bot, update, error: Exception):
