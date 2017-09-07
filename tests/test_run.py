@@ -7,6 +7,7 @@ import run
 
 TEST_QUERY_INVALID = 'invalid'
 TEST_QUERY_WITH_ADVANTAGE = "advantage 1d1"
+TEST_QUERY_WITH_DISADVANTAGE = "disadvantage 1d1"
 TEST_QUERY_WITH_MODIFIER = "4d1+2"
 
 OUTPUTS = {
@@ -15,6 +16,10 @@ OUTPUTS = {
         'total': 6,
     },
     TEST_QUERY_WITH_ADVANTAGE: {
+        'results': '1d1: [1]\n\t\t1d1: [1]',
+        'total': 1,
+    },
+    TEST_QUERY_WITH_DISADVANTAGE: {
         'results': '1d1: [1]\n\t\t1d1: [1]',
         'total': 1,
     },
@@ -99,6 +104,17 @@ def test_command_query(patched_validate_token):
         assert response == expected_message
 
         query = TEST_QUERY_WITH_ADVANTAGE
+        message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
+        update = Update(0, message)
+
+        run.commandquery(bot, update, query.split(' '))
+
+        response = responses.pop()
+        expected_message = user_and_query_to_static_response(test_user, query)
+
+        assert response == expected_message
+
+        query = TEST_QUERY_WITH_DISADVANTAGE
         message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
         update = Update(0, message)
 
