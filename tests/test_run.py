@@ -2,6 +2,7 @@ import parser
 
 from telegram import User
 
+import dice_notation
 import run
 
 
@@ -31,6 +32,8 @@ def test_roll_responder():
     expected += "\t\t5d1: [1, 1, 1, 1, 1]\n"
     expected += "<b>Total</b>: 12"
 
-    actual = run.roll_responder(test_user, query)
+    total, roll_results = dice_notation.evaluate(query)
+
+    actual = run.roll_responder(test_user, query, total, roll_results)
 
     assert actual == expected

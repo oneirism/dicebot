@@ -4,10 +4,15 @@ import dice
 
 
 dice_notation_pattern = re.compile('^(\d+(d\d+)?([\+\-\/\*](?!$))?){1,}$')
+single_dice_notation_pattern = re.compile('^\d+d\d+$')
 
 
 def is_valid_dice_notation(string: str) -> bool:
     return dice_notation_pattern.match(string)
+
+
+def is_valid_single_dice_notation(string: str) -> bool:
+    return single_dice_notation_pattern.match(string)
 
 
 def is_number(string: str) -> bool:
@@ -38,6 +43,19 @@ def apply_operator(operators: list, values: list, rolls: list):
 def greater_precedence(op1: str, op2: str) -> bool:
     precedences = {'+' : 0, '-' : 0, '*' : 1, '/' : 1, 'd': 2}
     return precedences[op1] > precedences[op2]
+
+
+def handicap(type: str, expression: str) -> (int, list):
+    rolls = []
+    rolls.append(dice.roll(expression))
+    rolls.append(dice.roll(expression))
+
+    total = -1
+    if type == 'advantage':
+        total = max(rolls)
+    elif type == 'disadvantage':
+        total = min(rolls)
+    return total, rolls
 
 
 def evaluate(expression: str) -> (int, list):

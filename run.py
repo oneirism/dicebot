@@ -24,15 +24,13 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def roll_responder(user: User, query: str) -> str:
-    total, roll_results = roll_em(query)
-
+def roll_responder(user: User, query: str, result: int, rolls: list) -> str:
     response = '<i>{0} rolled {1}</i>\n\n'.format(user.username, query)
-    response += '<b>Results</b>:\n'.format(roll_results)
-    for roll in roll_results:
-        result = '{0}d{1}: {2}'.format(len(roll), roll.sides, roll)
-        response += '\t\t{0}\n'.format(result)
-    response += '<b>Total</b>: {0}'.format(total)
+    response += '<b>Results</b>:\n'
+    for roll in rolls:
+        html = '{0}d{1}: {2}'.format(len(roll), roll.sides, roll)
+        response += '\t\t{0}\n'.format(html)
+    response += '<b>Total</b>: {0}'.format(result)
     return response
 
 
@@ -44,18 +42,28 @@ def roll_em(query: str) -> (int, list):
 
 def commandquery(bot: Bot, update, args):
     chat_id = update.message.chat_id
-    query = ''.join(args)
 
-    if dice_notation.is_valid_dice_notation(query):
-        response = roll_responder(update.message.from_user, query)
-        bot.send_message(chat_id, response, 'HTML', True)
+    if args[0] in ['advantage', 'disadvantage']:
+        query = ''.join(args[1:])
+        if dice_notation.is_valid_single_dice_notation(query):
+            result, rolls = dice_notation.handicap(args[0], query)
+            response = roll_responder(update.message.from_user, query, result, rolls)
     else:
-        bot.send_message(
-            chat_id,
-            INVALID_DICE_NOTATION_MSG,
-            'HTML',
-            True
-        )
+        query = ''.join(args)
+
+        if dice_notation.is_valid_dice_notation(query):
+            result, rolls = dice_notation.evaluate(query)
+            response = roll_responder(update.message.from_user, query, result, rolls)
+        else:
+            bot.send_message(
+                chat_id,
+                INVALID_DICE_NOTATION_MSG,
+                'HTML',
+                True
+            )
+            return
+
+    bot.send_message(chat_id, response, 'HTML', True)
 
 
 def inlinequery(bot: Bot, update: Update):
