@@ -24,8 +24,9 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def roll_responder(user: User, query: str, result: int, rolls: list) -> str:
-    response = '<i>{0} rolled {1}</i>\n\n'.format(user.username, query)
+def roll_responder(title: str, query: str, result: int, rolls: list) -> str:
+    response = '<i>{0}</i>\n'.format(title)
+
     response += '<b>Results</b>:\n'
     for roll in rolls:
         html = '{0}d{1}: {2}'.format(len(roll), roll.sides, roll)
@@ -47,13 +48,22 @@ def commandquery(bot: Bot, update, args):
         query = ''.join(args[1:])
         if dice_notation.is_valid_single_dice_notation(query):
             result, rolls = dice_notation.handicap(args[0], query)
-            response = roll_responder(update.message.from_user, query, result, rolls)
+
+            title = '@{0} rolled {1} with {2}'.format(
+                update.message.from_user.username, query, args[0]
+            )
+
+            response = roll_responder(title, query, result, rolls)
     else:
         query = ''.join(args)
 
         if dice_notation.is_valid_dice_notation(query):
             result, rolls = dice_notation.evaluate(query)
-            response = roll_responder(update.message.from_user, query, result, rolls)
+
+            title = '@{0} rolled {1}'.format(
+                update.message.from_user.username, query
+            )
+            response = roll_responder(title, query, result, rolls)
         else:
             bot.send_message(
                 chat_id,

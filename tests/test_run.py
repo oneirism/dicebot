@@ -27,13 +27,15 @@ def test_roll_responder():
     query = "5d1 + 7"
     test_user = User(id=1, is_bot=False, first_name='test', username='test')
 
-    expected = "<i>{0} rolled {1}</i>\n\n".format(test_user.username, query)
+    title = "{0} rolled {1}".format(test_user.username, query)
+
+    expected = "<i>{0}</i>\n".format(title)
     expected += "<b>Results</b>:\n"
     expected += "\t\t5d1: [1, 1, 1, 1, 1]\n"
     expected += "<b>Total</b>: 12"
 
     total, roll_results = dice_notation.evaluate(query)
 
-    actual = run.roll_responder(test_user, query, total, roll_results)
+    actual = run.roll_responder(title, query, total, roll_results)
 
     assert actual == expected
