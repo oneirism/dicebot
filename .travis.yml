@@ -7,6 +7,6 @@ install:
   - "pip install coveralls"
   - "pip install -r requirements.txt"
 script:
-  - "nosetests --with-cover --cover-package=run"
+  - "nosetests --with-cover"
 after_success:
   - "coveralls"
