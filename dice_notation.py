@@ -34,8 +34,10 @@ def apply_operator(operators: list, values: list, rolls: list):
     if operator == 'd':
         r = dice.roll("{}{}{}".format(left, operator, right))
         rolls.append(r)
+        value = 0
         for roll in r:
-            values.append(roll)
+            value += int(roll)
+        values.append(value)
     else:
         values.append(eval("{0}{1}{2}".format(left, operator, right)))
 
