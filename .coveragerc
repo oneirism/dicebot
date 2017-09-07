@@ -1,0 +1,8 @@
+[run]
+  source=.
+
+[report]
+  omit =
+    */python?.?/*
+    */python?.?-dev/*
+    */site-packages/nose/*
