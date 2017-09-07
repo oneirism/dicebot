@@ -2,14 +2,10 @@
 import dice_notation
 
 import logging
-import re
 import sys
-import typing
 from uuid import uuid4
 
-import dice
-import parser
-from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, ParseMode, Update, User
+from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, Update
 from telegram.ext import CommandHandler, InlineQueryHandler, Updater
 
 
@@ -24,7 +20,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 
-def roll_responder(title: str, query: str, result: int, rolls: list) -> str:
+def roll_responder(title: str, result: int, rolls: list) -> str:
     response = '<i>{0}</i>\n'.format(title)
 
     response += '<b>Results</b>:\n'
@@ -53,7 +49,7 @@ def commandquery(bot: Bot, update, args):
                 update.message.from_user.username, query, args[0]
             )
 
-            response = roll_responder(title, query, result, rolls)
+            response = roll_responder(title, result, rolls)
     else:
         query = ''.join(args)
 
@@ -63,11 +59,11 @@ def commandquery(bot: Bot, update, args):
             title = '@{0} rolled {1}'.format(
                 update.message.from_user.username, query
             )
-            response = roll_responder(title, query, result, rolls)
+            response = roll_responder(title, result, rolls)
         else:
             response = INVALID_DICE_NOTATION_MSG
 
-    msg = bot.send_message(chat_id, response, 'HTML', True)
+    bot.send_message(chat_id, response, 'HTML', True)
 
 
 def inlinequery(bot: Bot, update: Update):
@@ -84,7 +80,7 @@ def inlinequery(bot: Bot, update: Update):
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Roll {0}".format(query),
                                                 input_message_content=InputTextMessageContent(
-                                                    roll_responder(title, query, result, rolls),
+                                                    roll_responder(title, result, rolls),
                                                     disable_web_page_preview=True,
                                                     parse_mode='HTML'
                                                 )))
@@ -122,4 +118,3 @@ if __name__ == '__main__': # pragma: no cover
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
-

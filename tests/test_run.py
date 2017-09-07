@@ -71,7 +71,7 @@ def test_roll_responder():
     total, roll_results = dice_notation.evaluate(query)
     title = "@{0} rolled {1}".format(test_user.username, query)
 
-    actual = run.roll_responder(title, query, total, roll_results)
+    actual = run.roll_responder(title, total, roll_results)
     expected = user_and_query_to_static_response(test_user, query)
 
     assert actual == expected
