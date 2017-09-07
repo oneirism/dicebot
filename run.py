@@ -65,15 +65,9 @@ def commandquery(bot: Bot, update, args):
             )
             response = roll_responder(title, query, result, rolls)
         else:
-            bot.send_message(
-                chat_id,
-                INVALID_DICE_NOTATION_MSG,
-                'HTML',
-                True
-            )
-            return
+            response = INVALID_DICE_NOTATION_MSG
 
-    bot.send_message(chat_id, response, 'HTML', True)
+    msg = bot.send_message(chat_id, response, 'HTML', True)
 
 
 def inlinequery(bot: Bot, update: Update):
@@ -81,10 +75,16 @@ def inlinequery(bot: Bot, update: Update):
     results = list()
 
     if dice_notation.is_valid_dice_notation(query):
+        title = '@{0} rolled {1}'.format(
+            update.inline_query.from_user.username, query
+        )
+
+        result, rolls = dice_notation.evaluate(query)
+
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Roll {0}".format(query),
                                                 input_message_content=InputTextMessageContent(
-                                                    roll_responder(update.inline_query.from_user, query),
+                                                    roll_responder(title, query, result, rolls),
                                                     disable_web_page_preview=True,
                                                     parse_mode='HTML'
                                                 )))
@@ -100,11 +100,7 @@ def inlinequery(bot: Bot, update: Update):
     bot.answer_inline_query(update.inline_query.id, results, cache_time=0)
 
 
-def error(bot: Bot, update, error: Exception):
-    logger.warning('Update "%s" caused error "%s"' % (update, error))
-
-
-def main():
+if __name__ == '__main__': # pragma: no cover
     TOKEN = sys.argv[1]
 
     # Create the Updater and pass it your bot's token.
@@ -119,9 +115,6 @@ def main():
     dp.add_handler(CommandHandler("roll", commandquery,
                                   pass_args=True))
 
-    # log all errors
-    dp.add_error_handler(error)
-
     # Start the Bot
     updater.start_polling()
 
@@ -130,6 +123,3 @@ def main():
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
 
-
-if __name__ == '__main__':
-    main()
