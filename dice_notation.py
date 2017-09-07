@@ -55,7 +55,7 @@ def handicap(type: str, expression: str) -> (int, list):
         total = max(rolls)
     elif type == 'disadvantage':
         total = min(rolls)
-    return total, rolls
+    return int(total), rolls
 
 
 def evaluate(expression: str) -> (int, list):
