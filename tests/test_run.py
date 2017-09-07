@@ -146,3 +146,18 @@ def test_inline_query(patched_validate_token):
         expected_response = user_and_query_to_static_response(test_user, query)
 
         assert actual_response == expected_response
+
+        query = TEST_QUERY_INVALID
+
+        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
+        update = Update(0, inline_query=ilq)
+
+        run.inlinequery(bot, update)
+
+        received_results = result_list.pop()
+
+        assert len(received_results) == 1
+        actual_response = received_results[0].input_message_content['message_text']
+        expected_response = run.INVALID_DICE_NOTATION_MSG
+
+        assert actual_response == expected_response
