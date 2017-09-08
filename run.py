@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import dice_notation
 
 import logging
 import sys
@@ -8,6 +7,9 @@ from uuid import uuid4
 from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, Update
 from telegram.ext import CommandHandler, InlineQueryHandler, Updater
 
+import dice_notation
+from grammar import Grammar
+grammar = Grammar()
 
 INVALID_DICE_NOTATION_MSG = 'Invalid <a href="https://en.wikipedia.org/wiki/Dice_notation">Dice Notation.</a>'
 INVALID_DICE_NOTATION_MSG += '\r\nExample: <code>1d10</code> or <code>2d30 + 4</code>'
@@ -31,18 +33,14 @@ def roll_responder(title: str, result: int, rolls: list) -> str:
     return response
 
 
-def roll_em(query: str) -> (int, list):
-    total, roll_results = dice_notation.evaluate(query)
-
-    return total, roll_results
-
-
 def commandquery(bot: Bot, update, args):
     chat_id = update.message.chat_id
 
+    response = ''
+
     if args[0] in ['advantage', 'disadvantage']:
         query = ''.join(args[1:])
-        if dice_notation.is_valid_single_dice_notation(query):
+        if dice_notation.is_single_die(query):
             result, rolls = dice_notation.handicap(args[0], query)
 
             title = '@{0} rolled {1} with {2}'.format(
@@ -53,8 +51,8 @@ def commandquery(bot: Bot, update, args):
     else:
         query = ''.join(args)
 
-        if dice_notation.is_valid_dice_notation(query):
-            result, rolls = dice_notation.evaluate(query)
+        if dice_notation.is_dice_notation(query):
+            result, rolls = grammar.evaluate(query)
 
             title = '@{0} rolled {1}'.format(
                 update.message.from_user.username, query
@@ -70,12 +68,12 @@ def inlinequery(bot: Bot, update: Update):
     query = update.inline_query.query.replace(" ", "")
     results = list()
 
-    if dice_notation.is_valid_dice_notation(query):
+    if dice_notation.is_dice_notation(query):
         title = '@{0} rolled {1}'.format(
             update.inline_query.from_user.username, query
         )
 
-        result, rolls = dice_notation.evaluate(query)
+        result, rolls = grammar.evaluate(query)
 
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Roll {0}".format(query),
