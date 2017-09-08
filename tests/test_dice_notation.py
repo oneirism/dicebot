@@ -1,4 +1,21 @@
+import mock
+import sys
+
 import dice_notation
+
+
+@mock.patch('builtins.input', side_effect=['4d1'])
+def test_main(input):
+    import dice_notation
+    with mock.patch.object(dice_notation, "__name__", "__main__"):
+        dice_notation.init()
+
+    expected = 'Total: 4\nRolls: [Roll([1, 1, 1, 1], sides=1)]'
+
+    stdout = sys.stdout.getvalue().strip()
+
+    assert stdout == expected
+
 
 def test_dice_notation():
     invalid = "invalid"

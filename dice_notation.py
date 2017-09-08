@@ -131,10 +131,14 @@ def evaluate(expression: str) -> (int, list):
     while peek(operators) is not None:
         apply_operator(operators, values, rolls)
 
-    print(values)
-
     return sum(values), rolls
 
-if __name__ == '__main__':
-    total, rolls = evaluate("(1 + 2) * 2d4")
-    print("Total: {0}\nRolls: {1}\n".format(total, rolls))
+
+def init():
+    if __name__ == '__main__':
+        query = input()
+        total, rolls = evaluate(query)
+        print("Total: {0}\nRolls: {1}\n".format(total, rolls))
+
+
+init()
