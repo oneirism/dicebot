@@ -4,9 +4,6 @@ from typing import Callable
 import dice
 
 
-
-
-
 class Grammar():
     operators = {
         # addition
@@ -43,6 +40,7 @@ class Grammar():
         self.die_pattern = re.compile('^(\d)?(d\d+)$')
         self.operator_pattern = re.compile('[{0}]'.format(token_characters))
         self.dice_notation_pattern = re.compile('^(((\d+)|((\d+)?(d\d+)))([{0}](?!$))?){{1,}}$'.format(token_characters))
+
 
     def apply_operator(self, operators: list, values: list, rolls: list):
         operator = operators.pop()
@@ -101,9 +99,7 @@ class Grammar():
     def get_calc(self, operator: str) -> Callable[[int, int], int]:
         if operator in self.operators:
             return self.operators[operator]['calc']
-        else:
-            # TODO: Something more graceful.
-            raise
+        return None
 
 
     def get_tokens(self, expression: str) -> list:
