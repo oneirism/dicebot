@@ -3,7 +3,9 @@ import mock
 from telegram import Bot, Chat, InlineQuery, Message, Update, User
 
 import dice_notation
+from grammar import Grammar
 import run
+grammar = Grammar()
 
 TEST_QUERY_INVALID = 'invalid'
 TEST_QUERY_WITH_ADVANTAGE = "advantage 1d1"
@@ -47,28 +49,11 @@ def user_and_query_to_static_response(user, query):
     return expected
 
 
-def test_roll_em():
-    dice = "1d10"
-    modifier = 2
-    dice_notation = "{} + {}".format(dice, modifier)
-
-    total, roll_results = run.roll_em(dice_notation)
-
-    assert total is not None
-    assert 3 <= total <= 12
-
-    assert roll_results is not None
-
-    calculated_total = sum(int(roll) for roll in roll_results) + modifier
-
-    assert total == calculated_total
-
-
 def test_roll_responder():
     query = TEST_QUERY_WITH_MODIFIER
     test_user = User(id=1, is_bot=False, first_name='test', username='test')
 
-    total, roll_results = dice_notation.evaluate(query)
+    total, roll_results = grammar.evaluate(query)
     title = "@{0} rolled {1}".format(test_user.username, query)
 
     actual = run.roll_responder(title, total, roll_results)
