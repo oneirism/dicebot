@@ -11,27 +11,37 @@ TEST_QUERY_INVALID = 'invalid'
 TEST_QUERY_WITH_ADVANTAGE = "advantage 1d1"
 TEST_QUERY_WITH_DISADVANTAGE = "disadvantage 1d1"
 TEST_QUERY_WITH_MODIFIER = "4d1+2"
+TEST_QUERY_WITHOUT_MODIFIER = "4d1"
 
 OUTPUTS = {
     TEST_QUERY_WITH_MODIFIER: {
         'results': '4d1: [1, 1, 1, 1]',
         'total': 6,
     },
+    TEST_QUERY_WITHOUT_MODIFIER: {
+        'results': '4d1: [1, 1, 1, 1]',
+        'total': 4,
+    },
     TEST_QUERY_WITH_ADVANTAGE: {
-        'results': '1d1: [1]\n\t\t1d1: [1]',
+        'results': '1d1: [1]',
         'total': 1,
     },
     TEST_QUERY_WITH_DISADVANTAGE: {
-        'results': '1d1: [1]\n\t\t1d1: [1]',
+        'results': '1d1: [1]',
         'total': 1,
     },
 }
 
-def user_and_query_to_static_response(user, query):
+def user_and_query_to_static_response(user, query, advantage=False, disadvantage=False):
     query_string = ''
     if query.startswith('advantage'):
+        advantage = True
+    if query.startswith('disadvantage'):
+        disadvantage = True
+
+    if advantage:
         query_string = '{} with advantage'.format(query.replace('advantage ', ''))
-    elif query.startswith('disadvantage'):
+    elif disadvantage:
         query_string = '{} with disadvantage'.format(query.replace('disadvantage ', ''))
     else:
         query_string = query
@@ -48,6 +58,8 @@ def user_and_query_to_static_response(user, query):
 
     expected = "<i>{0}</i>\n".format(title)
     expected += "<b>Results</b>:\n"
+    if advantage or disadvantage:
+        expected += "\t\t{0}\n".format(results)
     expected += "\t\t{0}\n".format(results)
     expected += "<b>Total</b>: {0}".format(total)
 
@@ -185,6 +197,32 @@ def test_inline_query(patched_validate_token):
 
         assert actual_response == expected_response
 
+        # Non-Modifier Query
+        query = TEST_QUERY_WITHOUT_MODIFIER
+
+        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
+        update = Update(0, inline_query=ilq)
+
+        run.inlinequery(bot, update)
+
+        received_results = result_list.pop()
+
+        assert len(received_results) == 3
+
+        actual_response = received_results[0].input_message_content['message_text']
+        expected_response = user_and_query_to_static_response(test_user, query, advantage=True)
+        assert actual_response == expected_response
+
+        actual_response = received_results[1].input_message_content['message_text']
+        expected_response = user_and_query_to_static_response(test_user, query, disadvantage=True)
+        assert actual_response == expected_response
+
+        actual_response = received_results[2].input_message_content['message_text']
+        expected_response = user_and_query_to_static_response(test_user, query)
+
+        assert actual_response == expected_response
+
+        # Invalid Query
         query = TEST_QUERY_INVALID
 
         ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)

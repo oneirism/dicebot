@@ -37,7 +37,7 @@ class Grammar():
         for operator in self.operators:
             token_characters += operator
 
-        self.die_pattern = re.compile('^(\d)?(d\d+)$')
+        self.die_pattern = re.compile('^([\d]{1,2}|100)?(d([\d]{1,3}|1000))$')
         self.token_pattern = re.compile('[{0}]|\d+'.format(token_characters))
 
         dice_or_number = '(([\d]{1,2}|100)(d([\d]{1,3}|1000))?)'
