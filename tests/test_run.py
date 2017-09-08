@@ -36,7 +36,12 @@ def user_and_query_to_static_response(user, query):
     else:
         query_string = query
 
-    title = "@{0} rolled {1}".format(user.username, query_string)
+    if user.username:
+        name = user.username
+    else:
+        name = user.first_name
+
+    title = "{0} rolled {1}".format(name, query_string)
 
     results = OUTPUTS[query]['results']
     total = OUTPUTS[query]['total']
@@ -54,7 +59,7 @@ def test_roll_responder():
     test_user = User(id=1, is_bot=False, first_name='test', username='test')
 
     total, roll_results = grammar.evaluate(query)
-    title = "@{0} rolled {1}".format(test_user.username, query)
+    title = "{0} rolled {1}".format(test_user.username, query)
 
     actual = run.roll_responder(title, total, roll_results)
     expected = user_and_query_to_static_response(test_user, query)
@@ -68,6 +73,7 @@ def test_command_query(patched_validate_token):
     patched_validate_token().return_value = True
     bot = Bot('token')
     test_user = User(1, is_bot=False, username='test_user', first_name='test')
+    test_user_without_username = User(1, is_bot=False, first_name='test')
 
     responses = []
 
@@ -75,7 +81,20 @@ def test_command_query(patched_validate_token):
         responses.append(response)
 
     with mock.patch.object(Bot, 'send_message', side_effect=patch_send_message):
+        # Modifier Query without Username
+        query = TEST_QUERY_WITH_MODIFIER
 
+        message = Message(1, test_user_without_username, None, Chat(1, ''), text='/roll {0}'.format(query))
+        update = Update(0, message)
+
+        run.commandquery(bot, update, query.split(' '))
+
+        response = responses.pop()
+        expected_message = user_and_query_to_static_response(test_user_without_username, query)
+
+        assert response == expected_message
+
+        # Modifier Query with Username
         query = TEST_QUERY_WITH_MODIFIER
 
         message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
@@ -117,7 +136,7 @@ def test_command_query(patched_validate_token):
         run.commandquery(bot, update, query.split(' '))
 
         response = responses.pop()
-        expected_message = run.INVALID_DICE_NOTATION_MSG
+        expected_message = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
 
         assert response == expected_message
 
@@ -126,6 +145,7 @@ def test_inline_query(patched_validate_token):
     patched_validate_token().return_value = True
     bot = Bot('token')
     test_user = User(1, is_bot=False, username='test_user', first_name='test')
+    test_user_without_username = User(1, is_bot=False, first_name='test')
 
     result_list = []
 
@@ -133,6 +153,23 @@ def test_inline_query(patched_validate_token):
         result_list.append(results)
 
     with mock.patch.object(Bot, 'answer_inline_query', side_effect=patch_answer_inline_query):
+        # Modifier Query without Username
+        query = TEST_QUERY_WITH_MODIFIER
+
+        ilq = InlineQuery(1, test_user_without_username, '{0}'.format(query), 0)
+        update = Update(0, inline_query=ilq)
+
+        run.inlinequery(bot, update)
+
+        received_results = result_list.pop()
+
+        assert len(received_results) == 1
+        actual_response = received_results[0].input_message_content['message_text']
+        expected_response = user_and_query_to_static_response(test_user_without_username, query)
+
+        assert actual_response == expected_response
+
+        # Modifier Query with Username
         query = TEST_QUERY_WITH_MODIFIER
 
         ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
@@ -159,6 +196,6 @@ def test_inline_query(patched_validate_token):
 
         assert len(received_results) == 1
         actual_response = received_results[0].input_message_content['message_text']
-        expected_response = run.INVALID_DICE_NOTATION_MSG
+        expected_response = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
 
         assert actual_response == expected_response

@@ -31,15 +31,23 @@ class Grammar():
 
     def __init__(self):
         # Numbers and brackets
-        token_characters = '\d()'
+        token_characters = '()'
 
         # Plus supported operators
         for operator in self.operators:
             token_characters += operator
 
         self.die_pattern = re.compile('^(\d)?(d\d+)$')
-        self.operator_pattern = re.compile('[{0}]'.format(token_characters))
-        self.dice_notation_pattern = re.compile('^(((\d+)|((\d+)?(d\d+)))([{0}](?!$))?){{1,}}$'.format(token_characters))
+        self.token_pattern = re.compile('[{0}]|\d+'.format(token_characters))
+
+        dice_or_number = '(([\d]{1,2}|100)(d([\d]{1,3}|1000))?)'
+
+        self.dice_notation_pattern = re.compile(
+            '^{0}(([{1}](?!$)){0}){{0,9}}$'.format(
+                dice_or_number,
+                token_characters
+            )
+        )
 
 
     def apply_operator(self, operators: list, values: list, rolls: list):
@@ -103,7 +111,7 @@ class Grammar():
 
 
     def get_tokens(self, expression: str) -> list:
-        return re.findall(self.operator_pattern, expression)
+        return re.findall(self.token_pattern, expression)
 
 
     def greater_precedence(self, op1: str, op2: str) -> bool:
