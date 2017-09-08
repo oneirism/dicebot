@@ -13,7 +13,7 @@ grammar = Grammar()
 
 INVALID_DICE_NOTATION_MSG = 'Invalid <a href="https://en.wikipedia.org/wiki/Dice_notation">Dice Notation.</a>'
 INVALID_DICE_NOTATION_MSG += '\r\nExample: <code>1d10</code> or <code>2d30 + 4</code>'
-
+INVALID_DICE_NOTATION_MSG += '\r\n<i>Maximums: 10 components, 100 dice, 1000 sides.</i>'
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -35,6 +35,13 @@ def roll_responder(title: str, result: int, rolls: list) -> str:
 
 def commandquery(bot: Bot, update, args):
     chat_id = update.message.chat_id
+    user = update.message.from_user
+
+    name = ''
+    if user.username:
+        name = user.username
+    else:
+        name = user.first_name
 
     response = ''
 
@@ -43,8 +50,8 @@ def commandquery(bot: Bot, update, args):
         if dice_notation.is_single_die(query):
             result, rolls = dice_notation.handicap(args[0], query)
 
-            title = '@{0} rolled {1} with {2}'.format(
-                update.message.from_user.username, query, args[0]
+            title = '{0} rolled {1} with {2}'.format(
+                name, query, args[0]
             )
 
             response = roll_responder(title, result, rolls)
@@ -54,23 +61,30 @@ def commandquery(bot: Bot, update, args):
         if dice_notation.is_dice_notation(query):
             result, rolls = grammar.evaluate(query)
 
-            title = '@{0} rolled {1}'.format(
-                update.message.from_user.username, query
+            title = '{0} rolled {1}'.format(
+                name, query
             )
             response = roll_responder(title, result, rolls)
         else:
-            response = INVALID_DICE_NOTATION_MSG
+            response = 'Query: {0}\n\n{1}'.format(query, INVALID_DICE_NOTATION_MSG)
 
     bot.send_message(chat_id, response, 'HTML', True)
 
 
 def inlinequery(bot: Bot, update: Update):
     query = update.inline_query.query.replace(" ", "")
+    user = update.inline_query.from_user
+
+    name = ''
+    if user.username:
+        name = user.username
+    else:
+        name = user.first_name
     results = list()
 
     if dice_notation.is_dice_notation(query):
-        title = '@{0} rolled {1}'.format(
-            update.inline_query.from_user.username, query
+        title = '{0} rolled {1}'.format(
+            name, query
         )
 
         result, rolls = grammar.evaluate(query)
@@ -86,7 +100,10 @@ def inlinequery(bot: Bot, update: Update):
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Invalid Roll",
                                                 input_message_content=InputTextMessageContent(
-                                                    INVALID_DICE_NOTATION_MSG,
+                                                    'Query: {0}\n\n{1}'.format(
+                                                        query,
+                                                        INVALID_DICE_NOTATION_MSG
+                                                    ),
                                                     disable_web_page_preview=True,
                                                     parse_mode='HTML'
                                                 )))

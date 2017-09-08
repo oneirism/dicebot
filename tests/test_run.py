@@ -36,7 +36,7 @@ def user_and_query_to_static_response(user, query):
     else:
         query_string = query
 
-    title = "@{0} rolled {1}".format(user.username, query_string)
+    title = "{0} rolled {1}".format(user.username, query_string)
 
     results = OUTPUTS[query]['results']
     total = OUTPUTS[query]['total']
@@ -54,7 +54,7 @@ def test_roll_responder():
     test_user = User(id=1, is_bot=False, first_name='test', username='test')
 
     total, roll_results = grammar.evaluate(query)
-    title = "@{0} rolled {1}".format(test_user.username, query)
+    title = "{0} rolled {1}".format(test_user.username, query)
 
     actual = run.roll_responder(title, total, roll_results)
     expected = user_and_query_to_static_response(test_user, query)
@@ -117,7 +117,7 @@ def test_command_query(patched_validate_token):
         run.commandquery(bot, update, query.split(' '))
 
         response = responses.pop()
-        expected_message = run.INVALID_DICE_NOTATION_MSG
+        expected_message = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
 
         assert response == expected_message
 
@@ -159,6 +159,6 @@ def test_inline_query(patched_validate_token):
 
         assert len(received_results) == 1
         actual_response = received_results[0].input_message_content['message_text']
-        expected_response = run.INVALID_DICE_NOTATION_MSG
+        expected_response = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
 
         assert actual_response == expected_response
