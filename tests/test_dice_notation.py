@@ -1,4 +1,21 @@
+import mock
+import sys
+
 import dice_notation
+
+
+@mock.patch('builtins.input', side_effect=['4d1'])
+def test_main(input):
+    import dice_notation
+    with mock.patch.object(dice_notation, "__name__", "__main__"):
+        dice_notation.init()
+
+    expected = 'Total: 4\nRolls: [Roll([1, 1, 1, 1], sides=1)]'
+
+    stdout = sys.stdout.getvalue().strip()
+
+    assert stdout == expected
+
 
 def test_dice_notation():
     invalid = "invalid"
@@ -41,6 +58,7 @@ def test_handicap():
     assert result == int(min(rolls))
 
 
+# TODO: Test all of the operators defined in dice_notations.py.
 def test_evaluate():
     query = "(3d1 + 5) * 2"
     expected = 16
@@ -48,8 +66,16 @@ def test_evaluate():
     total, rolls = dice_notation.evaluate(query)
 
     print(total)
-    print(expected)
+    print(rolls)
 
     assert total == expected
-
     assert ((sum(int(roll) for roll in rolls) + 5) * 2) == expected
+
+    query = "3d1 + 2"
+    expected = 5
+
+    total, rolls = dice_notation.evaluate(query)
+
+    assert total == expected
+    assert (sum(int(roll) for roll in rolls) + 2) == expected
+

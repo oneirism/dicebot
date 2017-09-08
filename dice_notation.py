@@ -2,8 +2,52 @@ import re
 
 import dice
 
+op_details = {
+        # addition
+        '+' : {
+            'calc' : lambda a,b: a + b,
+            'prec': 0 },
+        # subtraction
+        '-' : {
+            'calc' : lambda a,b: a - b,
+            'prec': 0 },
+        # division
+        '/' : {
+            'calc' : lambda a,b: a / b,
+            'prec' : 1 },
+        # multiplication
+        '*' : {
+            'calc' : lambda a,b: a * b,
+            'prec' : 1 },
+        # exponentiation
+        '^' : {
+            'calc' : lambda a,b: a ** b,
+            'prec' : 3 },
+        # modulus
+        '%' : {
+            'calc' : lambda a,b: a % b,
+            'prec': 4 },
+        # max
+        '$' : {
+            'calc' : max,
+            'prec' : 5 },
+        # min
+        '&': {
+            'calc' : min,
+            'prec' : 5 },
+        # dice
+        'd' : {
+            'calc' : lambda a,b: dice.roll("{}d{}".format(a, b)),
+            'prec' : 6 },
+}
 
-dice_notation_pattern = re.compile('^(\d+(d\d+)?([\+\-\/\*](?!$))?){1,}$')
+
+op_pattern = '()'
+for operator in op_details:
+    op_pattern += operator
+
+
+dice_notation_pattern = re.compile('^(\d+(d\d+)?([{0}](?!$))?){{1,}}$'.format(op_pattern))
 single_dice_notation_pattern = re.compile('^\d+d\d+$')
 
 
@@ -31,37 +75,37 @@ def apply_operator(operators: list, values: list, rolls: list):
     operator = operators.pop()
     right = values.pop()
     left = values.pop()
-    if operator == 'd':
-        r = dice.roll("{}{}{}".format(left, operator, right))
-        rolls.append(r)
-        value = 0
-        for roll in r:
-            value += int(roll)
-        values.append(value)
-    else:
-        values.append(eval("{0}{1}{2}".format(left, operator, right)))
+
+    if operator in op_details:
+        calc = op_details[operator]['calc']
+        result = calc(left, right)
+
+        if isinstance(result, list):
+            rolls.append(result)
+            values.append(sum(result))
+        else:
+            values.append(result)
 
 
 def greater_precedence(op1: str, op2: str) -> bool:
-    precedences = {'+' : 0, '-' : 0, '*' : 1, '/' : 1, 'd': 2}
-    return precedences[op1] > precedences[op2]
+    return op_details[op1]['prec'] > op_details[op2]['prec']
 
 
-def handicap(type: str, expression: str) -> (int, list):
+def handicap(handicap_type: str, expression: str) -> (int, list):
     rolls = []
     rolls.append(dice.roll(expression))
     rolls.append(dice.roll(expression))
 
     total = -1
-    if type == 'advantage':
+    if handicap_type == 'advantage':
         total = max(rolls)
-    elif type == 'disadvantage':
+    elif handicap_type == 'disadvantage':
         total = min(rolls)
     return int(total), rolls
 
 
 def evaluate(expression: str) -> (int, list):
-    tokens = re.findall("[d+/*()-]|\d+", expression)
+    tokens = re.findall("[{0}]|\d+".format(op_pattern), expression)
 
     rolls = []
     values = []
@@ -88,3 +132,13 @@ def evaluate(expression: str) -> (int, list):
         apply_operator(operators, values, rolls)
 
     return sum(values), rolls
+
+
+def init():
+    if __name__ == '__main__':
+        query = input()
+        total, rolls = evaluate(query)
+        print("Total: {0}\nRolls: {1}\n".format(total, rolls))
+
+
+init()
