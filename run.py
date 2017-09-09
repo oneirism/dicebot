@@ -82,6 +82,37 @@ def inlinequery(bot: Bot, update: Update):
         name = user.first_name
     results = list()
 
+    if dice_notation.is_single_die(query):
+        title = '{0} rolled {1}'.format(
+            name, query
+        )
+
+        advantage_total, advantage_rolls = dice_notation.handicap('disadvantage', query)
+
+        results.append(InlineQueryResultArticle(id=uuid4(),
+                                                title="Roll {0} with advantage".format(query),
+                                                input_message_content=InputTextMessageContent(
+                                                    roll_responder(
+                                                        '{0} with advantage'.format(title),
+                                                        advantage_total, advantage_rolls
+                                                    ),
+                                                    disable_web_page_preview=True,
+                                                    parse_mode='HTML'
+                                                )))
+
+        disadvantage_total, disadvantage_rolls = dice_notation.handicap('disadvantage', query)
+
+        results.append(InlineQueryResultArticle(id=uuid4(),
+                                                title="Roll {0} with disadvantage".format(query),
+                                                input_message_content=InputTextMessageContent(
+                                                    roll_responder(
+                                                        '{0} with disadvantage'.format(title),
+                                                        disadvantage_total, disadvantage_rolls
+                                                    ),
+                                                    disable_web_page_preview=True,
+                                                    parse_mode='HTML'
+                                                )))
+
     if dice_notation.is_dice_notation(query):
         title = '{0} rolled {1}'.format(
             name, query
