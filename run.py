@@ -87,7 +87,7 @@ def inlinequery(bot: Bot, update: Update):
             name, query
         )
 
-        advantage_total, advantage_rolls = dice_notation.handicap('disadvantage', query)
+        advantage_total, advantage_rolls = dice_notation.handicap('advantage', query)
 
         results.append(InlineQueryResultArticle(id=uuid4(),
                                                 title="Roll {0} with advantage".format(query),

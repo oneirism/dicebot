@@ -1,3 +1,4 @@
+import re
 import mock
 
 from telegram import Bot, Chat, InlineQuery, Message, Update, User
@@ -12,6 +13,7 @@ TEST_QUERY_WITH_ADVANTAGE = "advantage 1d1"
 TEST_QUERY_WITH_DISADVANTAGE = "disadvantage 1d1"
 TEST_QUERY_WITH_MODIFIER = "4d1+2"
 TEST_QUERY_WITHOUT_MODIFIER = "4d1"
+TEST_QUERY_WITH_1d6 = "1d6"
 
 OUTPUTS = {
     TEST_QUERY_WITH_MODIFIER: {
@@ -29,6 +31,10 @@ OUTPUTS = {
     TEST_QUERY_WITH_DISADVANTAGE: {
         'results': '1d1: [1]',
         'total': 1,
+    },
+    TEST_QUERY_WITH_1d6: {
+        'results': '1d6: \[([1-6])\]',
+        'total': '([1-6])',
     },
 }
 
@@ -237,3 +243,41 @@ def test_inline_query(patched_validate_token):
         expected_response = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
 
         assert actual_response == expected_response
+
+        # 1d6 Query
+        query = TEST_QUERY_WITH_1d6
+
+        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
+        update = Update(0, inline_query=ilq)
+
+        while True:
+            run.inlinequery(bot, update)
+
+            received_results = result_list.pop()
+            assert len(received_results) == 3
+
+            actual_response = received_results[0].input_message_content['message_text']
+            expected_response = user_and_query_to_static_response(test_user, query, advantage=True)
+            total_search = re.search(expected_response, actual_response)
+            assert total_search
+            roll_1, roll_2, total = total_search.groups()
+            if roll_1 == roll_2:
+                continue
+            assert max([roll_1, roll_2]) == total
+
+            actual_response = received_results[1].input_message_content['message_text']
+            expected_response = user_and_query_to_static_response(test_user, query, disadvantage=True)
+            total_search = re.search(expected_response, actual_response)
+            assert total_search
+            roll_1, roll_2, total = total_search.groups()
+            if roll_1 == roll_2:
+                continue
+            assert min([roll_1, roll_2]) == total
+
+            actual_response = received_results[2].input_message_content['message_text']
+            expected_response = user_and_query_to_static_response(test_user, query)
+            total_search = re.search(expected_response, actual_response)
+            assert total_search
+            roll, total = total_search.groups()
+            assert roll == total
+            break
