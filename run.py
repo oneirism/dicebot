@@ -1,36 +1,68 @@
 #!/usr/bin/env python3
-
-import logging
 import sys
 from uuid import uuid4
 
+import dice
 from telegram import Bot, InlineQueryResultArticle, InputTextMessageContent, Update
 from telegram.ext import CommandHandler, InlineQueryHandler, Updater
 
-import dice_notation
-from grammar import Grammar
-grammar = Grammar()
 
 INVALID_DICE_NOTATION_MSG = 'Invalid <a href="https://en.wikipedia.org/wiki/Dice_notation">Dice Notation.</a>'
 INVALID_DICE_NOTATION_MSG += '\r\nExample: <code>1d10</code> or <code>2d30 + 4</code>'
 INVALID_DICE_NOTATION_MSG += '\r\n<i>Maximums: 10 components, 100 dice, 1000 sides.</i>'
 
-# Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                            level=logging.INFO)
 
-logger = logging.getLogger(__name__)
-
-
-def roll_responder(title: str, result: int, rolls: list) -> str:
+def format_response(title, result):
     response = '<i>{0}</i>\n'.format(title)
 
-    response += '<b>Results</b>:\n'
-    for roll in rolls:
-        html = '{0}d{1}: {2}'.format(len(roll), roll.sides, roll)
-        response += '\t\t{0}\n'.format(html)
-    response += '<b>Total</b>: {0}'.format(result)
+    rolls = print_sub(result)
+    print(rolls)
+
+    response += '<b>Results:</b>:\n'
+    print(type(rolls))
+    if isinstance(rolls, str):
+        response += '\t\t{0}\n'.format(rolls)
+    else:
+        for roll in rolls:
+            print(roll)
+            print(type(roll))
+            if isinstance(roll, str):
+                response += '\t\t{0}\n'.format(roll)
+            else:
+                ret = roll[0]
+                while not isinstance(ret, str):
+                    result = ret[0]
+                response += '\t\t{0}\n'.format(ret)
+
+    response += '<b>Total</b>: {0}'.format(result.result)
+
     return response
+
+def print_op(element):
+    lines = []
+    num_ops = len(element.original_operands)
+
+    for i, e in enumerate(element.original_operands):
+        newlines = print_sub(e)
+        if newlines is not None:
+            lines.append(newlines)
+
+    return lines
+
+def print_sub(element, **kwargs):
+    if not hasattr(element, 'result'):
+        element.evaluate_cached(**kwargs)
+
+    if isinstance(element, dice.elements.Operator):
+        return print_op(element)
+
+    elif isinstance(element, dice.elements.Dice):
+        if any(not isinstance(op, (dice.elements.Integer, int))
+                for op in element.original_operands):
+            return print_op(element)
+
+        print("Result: {0}".format(element.result))
+        return '{}: {}'.format(element, element.result)
 
 
 def commandquery(bot: Bot, update, args):
@@ -43,30 +75,19 @@ def commandquery(bot: Bot, update, args):
     else:
         name = user.first_name
 
-    response = ''
+    query = ''.join(args)
 
-    if args[0] in ['advantage', 'disadvantage']:
-        query = ''.join(args[1:])
-        if dice_notation.is_single_die(query):
-            result, rolls = dice_notation.handicap(args[0], query)
+    title = '{0} rolled {1}'.format(
+        name, query
+    )
 
-            title = '{0} rolled {1} with {2}'.format(
-                name, query, args[0]
-            )
-
-            response = roll_responder(title, result, rolls)
-    else:
-        query = ''.join(args)
-
-        if dice_notation.is_dice_notation(query):
-            result, rolls = grammar.evaluate(query)
-
-            title = '{0} rolled {1}'.format(
-                name, query
-            )
-            response = roll_responder(title, result, rolls)
-        else:
-            response = 'Query: {0}\n\n{1}'.format(query, INVALID_DICE_NOTATION_MSG)
+    print('Query: {}'.format(query))
+    print('Args: {}'.format(args))
+    try:
+        result, kwargs = dice.roll(query, raw=True, return_kwargs=True)
+        response = format_response(title, result)
+    except:
+        response = INVALID_DICE_NOTATION_MSG
 
     bot.send_message(chat_id, response, 'HTML', True)
 
@@ -76,68 +97,35 @@ def inlinequery(bot: Bot, update: Update):
     user = update.inline_query.from_user
 
     name = ''
+    response = ''
+    response_title = ''
+    title = ''
+
     if user.username:
         name = user.username
     else:
         name = user.first_name
+
+
+    try:
+        result, kwargs = dice.roll(query, raw=True, return_kwargs=True)
+        title = '{0} rolled {1}'.format(
+            name, query
+        )
+        response = format_response(title, result)
+        response_title='Roll {0}'.format(query)
+    except Exception as e:
+        response_title='Invalid Dice Notation'
+        response = INVALID_DICE_NOTATION_MSG
+
     results = list()
-
-    if dice_notation.is_single_die(query):
-        title = '{0} rolled {1}'.format(
-            name, query
-        )
-
-        advantage_total, advantage_rolls = dice_notation.handicap('advantage', query)
-
-        results.append(InlineQueryResultArticle(id=uuid4(),
-                                                title="Roll {0} with advantage".format(query),
-                                                input_message_content=InputTextMessageContent(
-                                                    roll_responder(
-                                                        '{0} with advantage'.format(title),
-                                                        advantage_total, advantage_rolls
-                                                    ),
-                                                    disable_web_page_preview=True,
-                                                    parse_mode='HTML'
-                                                )))
-
-        disadvantage_total, disadvantage_rolls = dice_notation.handicap('disadvantage', query)
-
-        results.append(InlineQueryResultArticle(id=uuid4(),
-                                                title="Roll {0} with disadvantage".format(query),
-                                                input_message_content=InputTextMessageContent(
-                                                    roll_responder(
-                                                        '{0} with disadvantage'.format(title),
-                                                        disadvantage_total, disadvantage_rolls
-                                                    ),
-                                                    disable_web_page_preview=True,
-                                                    parse_mode='HTML'
-                                                )))
-
-    if dice_notation.is_dice_notation(query):
-        title = '{0} rolled {1}'.format(
-            name, query
-        )
-
-        result, rolls = grammar.evaluate(query)
-
-        results.append(InlineQueryResultArticle(id=uuid4(),
-                                                title="Roll {0}".format(query),
-                                                input_message_content=InputTextMessageContent(
-                                                    roll_responder(title, result, rolls),
-                                                    disable_web_page_preview=True,
-                                                    parse_mode='HTML'
-                                                )))
-    else:
-        results.append(InlineQueryResultArticle(id=uuid4(),
-                                                title="Invalid Roll",
-                                                input_message_content=InputTextMessageContent(
-                                                    'Query: {0}\n\n{1}'.format(
-                                                        query,
-                                                        INVALID_DICE_NOTATION_MSG
-                                                    ),
-                                                    disable_web_page_preview=True,
-                                                    parse_mode='HTML'
-                                                )))
+    results.append(InlineQueryResultArticle(id=uuid4(),
+                                            title=response_title,
+                                            input_message_content=InputTextMessageContent(
+                                            response,
+                                            disable_web_page_preview=True,
+                                            parse_mode='HTML'
+    )))
 
     bot.answer_inline_query(update.inline_query.id, results, cache_time=0)
 
