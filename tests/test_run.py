@@ -3,95 +3,75 @@ import mock
 
 from telegram import Bot, Chat, InlineQuery, Message, Update, User
 
-import dice_notation
-from grammar import Grammar
 import run
-grammar = Grammar()
 
-TEST_QUERY_INVALID = 'invalid'
-TEST_QUERY_WITH_ADVANTAGE = "advantage 1d1"
-TEST_QUERY_WITH_DISADVANTAGE = "disadvantage 1d1"
-TEST_QUERY_WITH_MODIFIER = "4d1+2"
-TEST_QUERY_WITHOUT_MODIFIER = "4d1"
-TEST_QUERY_WITH_1d6 = "1d6"
 
-OUTPUTS = {
-    TEST_QUERY_WITH_MODIFIER: {
-        'results': '4d1: [1, 1, 1, 1]',
-        'total': 6,
-    },
-    TEST_QUERY_WITHOUT_MODIFIER: {
-        'results': '4d1: [1, 1, 1, 1]',
-        'total': 4,
-    },
-    TEST_QUERY_WITH_ADVANTAGE: {
-        'results': '1d1: [1]',
-        'total': 1,
-    },
-    TEST_QUERY_WITH_DISADVANTAGE: {
-        'results': '1d1: [1]',
-        'total': 1,
-    },
-    TEST_QUERY_WITH_1d6: {
-        'results': '1d6: \[([1-6])\]',
-        'total': '([1-6])',
-    },
-}
+test_user = User(1, is_bot=False, username='test_user', first_name='test')
+test_user_without_username = User(1, is_bot=False, first_name='test')
 
-def user_and_query_to_static_response(user, query, advantage=False, disadvantage=False):
-    query_string = ''
-    if query.startswith('advantage'):
-        advantage = True
-    if query.startswith('disadvantage'):
-        disadvantage = True
 
-    if advantage:
-        query_string = '{} with advantage'.format(query.replace('advantage ', ''))
-    elif disadvantage:
-        query_string = '{} with disadvantage'.format(query.replace('disadvantage ', ''))
-    else:
-        query_string = query
+tests = [
+    {
+        'query': "2d20H",
+        'user': test_user_without_username,
+        'valid': True,
+    },
+    {
+        'query': "2d20H+2",
+        'user': test_user,
+        'valid': True,
+    },
+    {
+        'query': "1d20",
+        'user': test_user,
+        'valid': True,
+    },
+    {
+        'query': "2d20+3d20^2+15",
+        'user': test_user,
+        'valid': True,
+    },
+    {
+        'query': "ABCDEF",
+        'user': test_user,
+        'valid': False,
+    },
+]
 
+def check_response(user, query, response):
+    name = ''
     if user.username:
         name = user.username
     else:
         name = user.first_name
 
-    title = "{0} rolled {1}".format(name, query_string)
+    lines = response.splitlines()
 
-    results = OUTPUTS[query]['results']
-    total = OUTPUTS[query]['total']
+    title = '<i>{0} rolled {1}</i>'.format(name, query)
+    if lines[0] != title:
+        return False
 
-    expected = "<i>{0}</i>\n".format(title)
-    expected += "<b>Results</b>:\n"
-    if advantage or disadvantage:
-        expected += "\t\t{0}\n".format(results)
-    expected += "\t\t{0}\n".format(results)
-    expected += "<b>Total</b>: {0}".format(total)
+    if lines[1] != '<b>Results:</b>':
+        return False
 
-    return expected
+    regexp = re.compile(r'\[(([1-9]|1[0-9]|20)(\,\040?)?)+\]')
+    for line in lines[2:len(lines)-2]:
+        if not regexp.search(line):
+            print("FAIL2: {0}".format(line))
+            return False
 
+    regexp = re.compile(r'<b>Total<\/b>: [\[]?\d+[\]]?')
+    if not regexp.match(lines[len(lines)-1]):
+        print("FAIL3")
+        return False
 
-def test_roll_responder():
-    query = TEST_QUERY_WITH_MODIFIER
-    test_user = User(id=1, is_bot=False, first_name='test', username='test')
-
-    total, roll_results = grammar.evaluate(query)
-    title = "{0} rolled {1}".format(test_user.username, query)
-
-    actual = run.roll_responder(title, total, roll_results)
-    expected = user_and_query_to_static_response(test_user, query)
-
-    assert actual == expected
-
+    return True
 
 
 @mock.patch('telegram.Bot._validate_token')
 def test_command_query(patched_validate_token):
     patched_validate_token().return_value = True
     bot = Bot('token')
-    test_user = User(1, is_bot=False, username='test_user', first_name='test')
-    test_user_without_username = User(1, is_bot=False, first_name='test')
 
     responses = []
 
@@ -99,71 +79,18 @@ def test_command_query(patched_validate_token):
         responses.append(response)
 
     with mock.patch.object(Bot, 'send_message', side_effect=patch_send_message):
-        # Modifier Query without Username
-        query = TEST_QUERY_WITH_MODIFIER
+        for test in tests:
+            message = Message(1, test.get('user'), None, Chat(1, ''), text='/roll {0}'.format(test.get('query')))
+            update = Update(0, message)
+            run.commandquery(bot, update, test.get('query').split(' '))
+            response = responses.pop()
+            assert check_response(test.get('user'), test.get('query'), response) is test.get('valid')
 
-        message = Message(1, test_user_without_username, None, Chat(1, ''), text='/roll {0}'.format(query))
-        update = Update(0, message)
-
-        run.commandquery(bot, update, query.split(' '))
-
-        response = responses.pop()
-        expected_message = user_and_query_to_static_response(test_user_without_username, query)
-
-        assert response == expected_message
-
-        # Modifier Query with Username
-        query = TEST_QUERY_WITH_MODIFIER
-
-        message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
-        update = Update(0, message)
-
-        run.commandquery(bot, update, query.split(' '))
-
-        response = responses.pop()
-        expected_message = user_and_query_to_static_response(test_user, query)
-
-        assert response == expected_message
-
-        query = TEST_QUERY_WITH_ADVANTAGE
-        message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
-        update = Update(0, message)
-
-        run.commandquery(bot, update, query.split(' '))
-
-        response = responses.pop()
-        expected_message = user_and_query_to_static_response(test_user, query)
-
-        assert response == expected_message
-
-        query = TEST_QUERY_WITH_DISADVANTAGE
-        message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
-        update = Update(0, message)
-
-        run.commandquery(bot, update, query.split(' '))
-
-        response = responses.pop()
-        expected_message = user_and_query_to_static_response(test_user, query)
-
-        assert response == expected_message
-
-        query = TEST_QUERY_INVALID
-        message = Message(1, test_user, None, Chat(1, ''), text='/roll {0}'.format(query))
-        update = Update(0, message)
-
-        run.commandquery(bot, update, query.split(' '))
-
-        response = responses.pop()
-        expected_message = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
-
-        assert response == expected_message
 
 @mock.patch('telegram.Bot._validate_token')
 def test_inline_query(patched_validate_token):
     patched_validate_token().return_value = True
     bot = Bot('token')
-    test_user = User(1, is_bot=False, username='test_user', first_name='test')
-    test_user_without_username = User(1, is_bot=False, first_name='test')
 
     result_list = []
 
@@ -171,113 +98,11 @@ def test_inline_query(patched_validate_token):
         result_list.append(results)
 
     with mock.patch.object(Bot, 'answer_inline_query', side_effect=patch_answer_inline_query):
-        # Modifier Query without Username
-        query = TEST_QUERY_WITH_MODIFIER
-
-        ilq = InlineQuery(1, test_user_without_username, '{0}'.format(query), 0)
-        update = Update(0, inline_query=ilq)
-
-        run.inlinequery(bot, update)
-
-        received_results = result_list.pop()
-
-        assert len(received_results) == 1
-        actual_response = received_results[0].input_message_content['message_text']
-        expected_response = user_and_query_to_static_response(test_user_without_username, query)
-
-        assert actual_response == expected_response
-
-        # Modifier Query with Username
-        query = TEST_QUERY_WITH_MODIFIER
-
-        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
-        update = Update(0, inline_query=ilq)
-
-        run.inlinequery(bot, update)
-
-        received_results = result_list.pop()
-
-        assert len(received_results) == 1
-        actual_response = received_results[0].input_message_content['message_text']
-        expected_response = user_and_query_to_static_response(test_user, query)
-
-        assert actual_response == expected_response
-
-        # Non-Modifier Query
-        query = TEST_QUERY_WITHOUT_MODIFIER
-
-        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
-        update = Update(0, inline_query=ilq)
-
-        run.inlinequery(bot, update)
-
-        received_results = result_list.pop()
-
-        assert len(received_results) == 3
-
-        actual_response = received_results[0].input_message_content['message_text']
-        expected_response = user_and_query_to_static_response(test_user, query, advantage=True)
-        assert actual_response == expected_response
-
-        actual_response = received_results[1].input_message_content['message_text']
-        expected_response = user_and_query_to_static_response(test_user, query, disadvantage=True)
-        assert actual_response == expected_response
-
-        actual_response = received_results[2].input_message_content['message_text']
-        expected_response = user_and_query_to_static_response(test_user, query)
-
-        assert actual_response == expected_response
-
-        # Invalid Query
-        query = TEST_QUERY_INVALID
-
-        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
-        update = Update(0, inline_query=ilq)
-
-        run.inlinequery(bot, update)
-
-        received_results = result_list.pop()
-
-        assert len(received_results) == 1
-        actual_response = received_results[0].input_message_content['message_text']
-        expected_response = 'Query: {0}\n\n{1}'.format(query, run.INVALID_DICE_NOTATION_MSG)
-
-        assert actual_response == expected_response
-
-        # 1d6 Query
-        query = TEST_QUERY_WITH_1d6
-
-        ilq = InlineQuery(1, test_user, '{0}'.format(query), 0)
-        update = Update(0, inline_query=ilq)
-
-        while True:
+        for test in tests:
+            ilq = InlineQuery(1, test.get('user'), test.get('query'), 0)
+            update = Update(0, inline_query=ilq)
             run.inlinequery(bot, update)
-
             received_results = result_list.pop()
-            assert len(received_results) == 3
-
-            actual_response = received_results[0].input_message_content['message_text']
-            expected_response = user_and_query_to_static_response(test_user, query, advantage=True)
-            total_search = re.search(expected_response, actual_response)
-            assert total_search
-            roll_1, roll_2, total = total_search.groups()
-            if roll_1 == roll_2:
-                continue
-            assert max([roll_1, roll_2]) == total
-
-            actual_response = received_results[1].input_message_content['message_text']
-            expected_response = user_and_query_to_static_response(test_user, query, disadvantage=True)
-            total_search = re.search(expected_response, actual_response)
-            assert total_search
-            roll_1, roll_2, total = total_search.groups()
-            if roll_1 == roll_2:
-                continue
-            assert min([roll_1, roll_2]) == total
-
-            actual_response = received_results[2].input_message_content['message_text']
-            expected_response = user_and_query_to_static_response(test_user, query)
-            total_search = re.search(expected_response, actual_response)
-            assert total_search
-            roll, total = total_search.groups()
-            assert roll == total
-            break
+            assert len(received_results) == 1
+            response = received_results[0].input_message_content['message_text']
+            assert check_response(test.get('user'), test.get('query'), response) is test.get('valid')
