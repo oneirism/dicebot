@@ -19,7 +19,7 @@ def format_response(title, result):
     rolls = print_sub(result)
     print("Rolls: {0}".format(rolls))
 
-    response += '<b>Results:</b>:\n'
+    response += '<b>Results:</b>\n'
     print(type(rolls))
     if isinstance(rolls, str):
         response += '\t\t{0}\n'.format(rolls)

@@ -27,6 +27,11 @@ tests = [
         'valid': True,
     },
     {
+        'query': "2d20+3d20^2+15",
+        'user': test_user,
+        'valid': True,
+    },
+    {
         'query': "ABCDEF",
         'user': test_user,
         'valid': False,
@@ -46,16 +51,18 @@ def check_response(user, query, response):
     if lines[0] != title:
         return False
 
-    if lines[1] != '<b>Results:</b>:':
+    if lines[1] != '<b>Results:</b>':
         return False
 
     regexp = re.compile(r'\[(([1-9]|1[0-9]|20)(\,\040?)?)+\]')
     for line in lines[2:len(lines)-2]:
-        if not regexp.match(line):
+        if not regexp.search(line):
+            print("FAIL2: {0}".format(line))
             return False
 
     regexp = re.compile(r'<b>Total<\/b>: [\[]?\d+[\]]?')
     if not regexp.match(lines[len(lines)-1]):
+        print("FAIL3")
         return False
 
     return True
