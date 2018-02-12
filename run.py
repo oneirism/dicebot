@@ -57,15 +57,13 @@ def print_sub(element, **kwargs):
         return print_op(element)
 
     elif isinstance(element, dice.elements.Dice):
-        if any(not isinstance(op, (dice.elements.Integer, int))
-                for op in element.original_operands):
+        if any(not isinstance(op, (dice.elements.Integer, int)) for op in element.original_operands):
             return print_op(element)
 
         print("Result: {0}".format(element.result))
         return '{}: {}'.format(element, element.result)
 
-    raise Exception('Unrecognised element type')
-
+    return None
 
 def commandquery(bot: Bot, update, args):
     chat_id = update.message.chat_id

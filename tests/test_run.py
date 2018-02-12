@@ -17,7 +17,7 @@ tests = [
         'valid': True,
     },
     {
-        'query': "2d20H",
+        'query': "2d20H+2",
         'user': test_user,
         'valid': True,
     },
@@ -49,7 +49,7 @@ def check_response(user, query, response):
         if not regexp.match(line):
             return False
 
-    regexp = re.compile(r'<b>Total<\/b>: \[\d+\]')
+    regexp = re.compile(r'<b>Total<\/b>: [\[]?\d+[\]]?')
     if not regexp.match(lines[len(lines)-1]):
         return False
 
