@@ -17,16 +17,12 @@ def format_response(title, result):
     response = '<i>{0}</i>\n'.format(title)
 
     rolls = print_sub(result)
-    print("Rolls: {0}".format(rolls))
 
     response += '<b>Results:</b>\n'
-    print(type(rolls))
     if isinstance(rolls, str):
         response += '\t\t{0}\n'.format(rolls)
     else:
         for roll in rolls:
-            print(roll)
-            print(type(roll))
             if isinstance(roll, str):
                 response += '\t\t{0}\n'.format(roll)
             else:
@@ -54,10 +50,6 @@ def print_sub(element, **kwargs):
         return print_op(element)
 
     elif isinstance(element, dice.elements.Dice):
-        if any(not isinstance(op, (dice.elements.Integer, int)) for op in element.original_operands):
-            return print_op(element)
-
-        print("Result: {0}".format(element.result))
         return '{}: {}'.format(element, element.result)
 
     return None
@@ -78,8 +70,6 @@ def commandquery(bot: Bot, update, args):
         name, query
     )
 
-    print('Query: {}'.format(query))
-    print('Args: {}'.format(args))
     try:
         result = dice.roll(query, raw=True)
         response = format_response(title, result)
