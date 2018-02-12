@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 import sys
 from uuid import uuid4
 
@@ -16,7 +17,7 @@ def format_response(title, result):
     response = '<i>{0}</i>\n'.format(title)
 
     rolls = print_sub(result)
-    print(rolls)
+    print("Rolls: {0}".format(rolls))
 
     response += '<b>Results:</b>:\n'
     print(type(rolls))
@@ -40,9 +41,8 @@ def format_response(title, result):
 
 def print_op(element):
     lines = []
-    num_ops = len(element.original_operands)
 
-    for i, e in enumerate(element.original_operands):
+    for _, e in enumerate(element.original_operands):
         newlines = print_sub(e)
         if newlines is not None:
             lines.append(newlines)
@@ -84,9 +84,11 @@ def commandquery(bot: Bot, update, args):
     print('Query: {}'.format(query))
     print('Args: {}'.format(args))
     try:
-        result, kwargs = dice.roll(query, raw=True, return_kwargs=True)
+        result = dice.roll(query, raw=True)
         response = format_response(title, result)
-    except:
+    except Exception as e:
+        logging.exception(e)
+
         response = INVALID_DICE_NOTATION_MSG
 
     bot.send_message(chat_id, response, 'HTML', True)
@@ -108,13 +110,15 @@ def inlinequery(bot: Bot, update: Update):
 
 
     try:
-        result, kwargs = dice.roll(query, raw=True, return_kwargs=True)
+        result = dice.roll(query, raw=True)
         title = '{0} rolled {1}'.format(
             name, query
         )
         response = format_response(title, result)
         response_title='Roll {0}'.format(query)
     except Exception as e:
+        logging.exception(e)
+
         response_title='Invalid Dice Notation'
         response = INVALID_DICE_NOTATION_MSG
 
@@ -132,6 +136,12 @@ def inlinequery(bot: Bot, update: Update):
 
 if __name__ == '__main__': # pragma: no cover
     TOKEN = sys.argv[1]
+
+    # Logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 
     # Create the Updater and pass it your bot's token.
     updater = Updater(TOKEN)
