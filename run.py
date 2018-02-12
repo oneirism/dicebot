@@ -30,10 +30,7 @@ def format_response(title, result):
             if isinstance(roll, str):
                 response += '\t\t{0}\n'.format(roll)
             else:
-                ret = roll[0]
-                while not isinstance(ret, str):
-                    result = ret[0]
-                response += '\t\t{0}\n'.format(ret)
+                response += '\t\t{0}\n'.format(roll[0])
 
     response += '<b>Total</b>: {0}'.format(result.result)
 

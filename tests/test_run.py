@@ -22,6 +22,11 @@ tests = [
         'valid': True,
     },
     {
+        'query': "1d20",
+        'user': test_user,
+        'valid': True,
+    },
+    {
         'query': "ABCDEF",
         'user': test_user,
         'valid': False,
