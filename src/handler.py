@@ -10,7 +10,7 @@ import requests
 
 # Local
 # TODO: Force local import
-from utils import *
+from utils import format_response
 
 
 # Environment Variables
@@ -37,6 +37,8 @@ def roll(event, context):
     try:
         logger = init_logger()
 
+        logger.debug(context)
+
         # Read Telegram API event 
         event_body = json.loads(event.get("body"))
 
@@ -50,7 +52,7 @@ def roll(event, context):
             first_name = ilq.get("from").get("first_name")
 
             # Get the user's query
-            query = inline_query.get("query")
+            query = ilq.get("query")
 
             # Roll the dice!
             # TODO: Make this a function.
@@ -84,7 +86,7 @@ def roll(event, context):
             url = BASE_URL + "/answerInlineQuery"
             response = requests.post(url, response_data)
 
-            logging.debug("Response: {0}".format(response.text))
+            logging.debug("Response: %s", response.text)
 
         # Command Queries
         elif event_body.get("message") is not None:
@@ -120,11 +122,10 @@ def roll(event, context):
                 url = BASE_URL + "/sendMessage"
                 response = requests.post(url, response_data)
 
-                logging.debug("Response: {0}".format(response.text))
+                logging.debug("Response: %s", response.text)
 
     except Exception as e:
         logging.critical(e)
 
-    finally:
-        # Let Telegram know we've processed the message
-        return {"statusCode": 200}
+    # Let Telegram know we've processed the message
+    return {"statusCode": 200}

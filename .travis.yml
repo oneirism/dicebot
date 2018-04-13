@@ -4,10 +4,10 @@ cache:
 python:
   - "3.6"
 install:
-  - "pip install coveralls"
+  - "pip install coveralls nose2 prospector"
   - "pip install -r requirements.txt"
 script:
   - "prospector"
-  - "nosetests --with-cover"
+  - "nose2 --with-coverage"
 after_success:
   - "coveralls"
