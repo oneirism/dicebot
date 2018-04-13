@@ -18,7 +18,7 @@ ENV = os.environ['ENV']
 if ENV == "TEST":
     TOKEN = "TEST"
 else:
-    TOKEN = os.environ['TELEGRAM_TOKEN']
+    TOKEN = os.environ['TELEGRAM_TOKEN'] # pragma: no cover
 
 # Globals
 BASE_URL = "https://api.telegram.org/bot{}".format(TOKEN)
@@ -29,7 +29,7 @@ def init_logger():
     logger = logging.getLogger()
 
     if ENV == "Production":
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.INFO) # pragma: no cover
     else:
         logger.setLevel(logging.DEBUG)
 
@@ -42,7 +42,7 @@ def roll(event, context):
 
         logger.debug(context)
 
-        # Read Telegram API event 
+        # Read Telegram API event
         event_body = json.loads(event.get("body"))
 
         logger.debug(event_body)

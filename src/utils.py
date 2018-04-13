@@ -13,8 +13,6 @@ def format_response(title, result):
         for roll in rolls:
             if isinstance(roll, str):
                 response += '\t\t{0}\n'.format(roll)
-            else:
-                response += '\t\t{0}\n'.format(roll[0])
 
     if isinstance(result.result, list):
         total = sum(result.result)

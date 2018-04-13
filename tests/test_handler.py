@@ -31,7 +31,7 @@ def mock_tg_resp(*args, **kwargs):
             {
                 "statusCode": "200",
             },
-            
+
             200
         )
 
@@ -63,7 +63,7 @@ class QueryTest(unittest.TestCase):
                         'type': 'private'
                     },
                     'date': 1523568333,
-                    'text': '/roll 1d20',
+                    'text': '/roll 2d20',
                     'entities': [
                         {
                             'offset': 0,
@@ -76,7 +76,57 @@ class QueryTest(unittest.TestCase):
         )
 
         response = roll(
-            event,    
+            event,
+            None
+        )
+
+        logger.debug(response)
+        self.assertIsNotNone(response)
+
+class InlineTest(unittest.TestCase):
+    @mock.patch('requests.post', side_effect=mock_tg_resp)
+    def test(self, mock):
+        event = {}
+        event["body"] = json.dumps(
+            {
+                'update_id': 362761695,
+                'inline_query':
+                {
+                    'id': '1459744682983739794',
+                    'from': {
+                        'id': 339873294,
+                        'is_bot': False,
+                        'first_name': 'Brendan',
+                        'last_name': 'Devenney',
+                        'username': 'devenney',
+                        'language_code': 'en-US'
+                    },
+                    'query': '2d20 + 1d20 + 4',
+                    'offset': ''
+                }
+            }
+        )
+
+        response = roll(
+            event,
+            None
+        )
+
+        logger.debug(response)
+        self.assertIsNotNone(response)
+
+class GarbageTest(unittest.TestCase):
+    def test(self):
+        event = {}
+        event["body"] = json.dumps(
+            {
+                'update_id': 36212342,
+                'message': 'garbage'
+            }
+        )
+
+        response = roll(
+            event,
             None
         )
 
