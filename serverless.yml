@@ -1,0 +1,30 @@
+service: dicebot
+
+plugins:
+  - serverless-domain-manager
+  - serverless-python-requirements
+
+custom:
+  customDomain:
+    domainName: bot.devenney.io
+    basePath: ${env:TELEGRAM_SEC}
+    createRoute53Record: true
+
+provider:
+  name: aws
+  runtime: python3.6
+
+  stage: dev
+  region: eu-west-1
+
+  environment:
+    ENV: ${self:provider.stage}
+    TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
+
+functions:
+  roll:
+    events:
+      - http:
+          path: roll  
+          method: post
+    handler: handler.roll
