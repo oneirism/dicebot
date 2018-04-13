@@ -15,7 +15,10 @@ from utils import format_response
 
 # Environment Variables
 ENV = os.environ['ENV']
-TOKEN = os.environ['TELEGRAM_TOKEN']
+if ENV == "TEST":
+    TOKEN = "TEST"
+else:
+    TOKEN = os.environ['TELEGRAM_TOKEN']
 
 # Globals
 BASE_URL = "https://api.telegram.org/bot{}".format(TOKEN)

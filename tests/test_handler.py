@@ -14,10 +14,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-os.putenv("ENV", "TEST")
-os.putenv("TELEGRAM_TOKEN", "TEST")
-
-
 def mock_tg_resp(*args, **kwargs):
     class MockResponse:
         def __init__(self, json_data, status_code):
