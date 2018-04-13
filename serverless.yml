@@ -25,6 +25,6 @@ functions:
   roll:
     events:
       - http:
-          path: roll  
+          path: roll
           method: post
-    handler: handler.roll
+    handler: src/handler.roll

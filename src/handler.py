@@ -10,7 +10,7 @@ import requests
 
 # Local
 # TODO: Force local import
-from utils import format_response
+from src.utils import format_response
 
 
 # Environment Variables
