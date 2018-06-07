@@ -1,13 +1,16 @@
 language: python
 cache:
   - "pip"
+  - "yarn"
 python:
   - "3.6"
 install:
-  - "pip install coveralls nose2 prospector"
-  - "pip install -r requirements.txt"
+  - "pip install pipenv"
+  - "pipenv install --dev"
+  - "pipenv run yarn install"
 script:
-  - "prospector"
-  - "nose2 --with-coverage"
+  - "pipenv check"
+  - "pipenv run prospector"
+  - "pipenv run nose2 --with-coverage"
 after_success:
-  - "coveralls"
+  - "pipenv run coveralls"
