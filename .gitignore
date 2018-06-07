@@ -1,3 +1,6 @@
+### node.js ###
+node_modules/
+
 ### pytest ###
 **/.pytest_cache
 

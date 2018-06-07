@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+coveralls = "*"
+nose2 = "*"
+prospector = "*"
+
+[packages]
+dice = "==2.2.0"
+requests = "==2.18.4"
+
+[requires]
+python_version = "3.6"
