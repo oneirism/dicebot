@@ -5,12 +5,19 @@ cache:
 python:
   - "3.6"
 install:
+  # Python Dependencies
   - "pip install pipenv"
-  - "pipenv install --dev"
-  - "pipenv run yarn install"
-script:
+  # Production Dependencies
+  - "pipenv install"
+  # Package Safety Check
   - "pipenv check"
+  # Development Dependencies
+  - "pipenv install --dev"
+script:
+  # Static Code Analysis
   - "pipenv run prospector"
+  # Unit Tests
   - "pipenv run nose2 --with-coverage"
 after_success:
+  # Submit Coverage
   - "pipenv run coveralls"
