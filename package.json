@@ -6,9 +6,11 @@
   "author": "Brendan Devenney <brendan@devenney.io>",
   "license": "MIT",
   "scripts": {
+    "deploy": "sls deploy --stage production",
     "test": "ENV=TEST pipenv run nose2 --with-coverage"
   },
   "dependencies": {
+    "serverless": "^1.32.0",
     "serverless-domain-manager": "^2.4.0",
     "serverless-python-requirements": "^4.0.4"
   }

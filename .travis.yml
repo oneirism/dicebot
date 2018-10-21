@@ -13,11 +13,21 @@ install:
   - "pipenv check"
   # Development Dependencies
   - "pipenv install --dev"
+  # Node Dependencies
+  - "nvm install --lts"
+  - "nvm use --lts"
+  - "pipenv run yarn install"
 script:
   # Static Code Analysis
-  - "pipenv run prospector"
+  - "PYTHONPATH=$(pwd) && pipenv run prospector"
   # Unit Tests
   - "pipenv run nose2 --with-coverage"
 after_success:
   # Submit Coverage
   - "pipenv run coveralls"
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: "pipenv run yarn deploy"
+  on:
+    branch: master
