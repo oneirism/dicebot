@@ -5,6 +5,9 @@
   "repository": "https://github.com/oneirism/dicebot",
   "author": "Brendan Devenney <brendan@devenney.io>",
   "license": "MIT",
+  "scripts": {
+    "test": "ENV=TEST pipenv run nose2 --with-coverage"
+  },
   "dependencies": {
     "serverless-domain-manager": "^2.4.0",
     "serverless-python-requirements": "^4.0.4"
