@@ -40,7 +40,7 @@ def print_sub(element, **kwargs):
     if isinstance(element, dice.elements.Operator):
         return print_op(element)
 
-    elif isinstance(element, dice.elements.Dice):
+    if isinstance(element, dice.elements.Dice):
         return '{}: {}'.format(element, element.result)
 
     return None

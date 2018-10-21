@@ -9,8 +9,8 @@ nose2 = "*"
 prospector = "*"
 
 [packages]
-dice = "==2.2.0"
-requests = "==2.18.4"
+dice = "==2.3.5"
+requests = "==2.20.0"
 
 [requires]
 python_version = "3.6"

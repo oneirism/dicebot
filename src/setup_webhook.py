@@ -10,6 +10,7 @@ test_url = "https://bot.devenney.io/{}/roll".format(tg_sec)
 def get_url(method):
     return "https://api.telegram.org/bot{}/{}".format(bot_token,method)
 
+
 r = requests.get(get_url("setWebhook"), data={"url": test_url})
 r = requests.get(get_url("getWebhookInfo"))
 pprint(r.status_code)
