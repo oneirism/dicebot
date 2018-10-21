@@ -7,7 +7,7 @@ plugins:
 custom:
   customDomain:
     domainName: bot.devenney.io
-    basePath: ${env:TELEGRAM_SEC}
+    basePath: ${env:SECURE_ENDPOINT}
     createRoute53Record: true
 
 provider:
@@ -16,6 +16,12 @@ provider:
 
   stage: dev
   region: eu-west-1
+
+  deploymentBucket:
+    name: bot.devenney.io
+    serverSideEncryption: AES256
+
+  deploymentPrefix: ${self:provider.stage}
 
   environment:
     ENV: ${self:provider.stage}
